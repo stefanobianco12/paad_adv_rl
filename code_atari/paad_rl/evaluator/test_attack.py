@@ -204,6 +204,7 @@ def main():
 
     torch.set_num_threads(1)
     device = torch.device("cuda:{}".format(args.cuda_id) if args.cuda else "cpu")
+    print("prova")
 
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, device, False)
