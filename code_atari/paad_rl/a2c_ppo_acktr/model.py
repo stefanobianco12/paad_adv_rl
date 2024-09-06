@@ -48,6 +48,10 @@ class Policy(nn.Module):
             self.epsilon = epsilon
 
         self.base = base(obs_shape[0], **base_kwargs)
+        #probabiliy to attack layer
+        hidden_size = 512
+        self.prob = nn.Sequential(nn.Linear(hidden_size, 1), nn.Sigmoid())
+
         
         if action_space.__class__.__name__ == "Discrete":
             num_outputs = action_space.n
@@ -120,6 +124,12 @@ class Policy(nn.Module):
     def get_value(self, inputs, rnn_hxs, masks):
         value, _, _ = self.base(inputs, rnn_hxs, masks)
         return value
+
+    def get_prob(self, inputs, rnn_hxs, masks):
+        _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
+        p = self.prob(actor_features)
+
+        return p 
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action, beta=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)

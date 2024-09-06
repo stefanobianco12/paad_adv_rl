@@ -265,6 +265,8 @@ def main():
     rew_file = open(result_path, "wt")
     best_performance = np.inf
     performance_record = deque(maxlen=100)
+
+    reward_penalty=0
         
     for j in range(num_updates):
 
@@ -273,7 +275,8 @@ def main():
             utils.update_linear_schedule(
                 agent.optimizer, j, num_updates,
                 agent.optimizer.lr if args.algo == "acktr" else args.lr)
-
+            
+        reward_min=torch.inf
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():
@@ -287,23 +290,32 @@ def main():
             ### policy perturbation is given by 1-\sum a_i
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
         
-            ### Compute the perturbation in the state space
-            if args.fgsm:
-                obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
-                        args.epsilon, device)
-            elif args.momentum:
-                obs_perturb = dqn_dir_perturb_momentum(victim, rollouts.obs[step], perturb_direction, 
-                        args.epsilon, device, maxiter=args.attack_steps)
-            else:
-                obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
-                        args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
-                        rand_init=args.rand_init)
+            obs_perturb = torch.zeros_like(obs).to(device)
+            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step]) > 0.5:
+                ### Compute the perturbation in the state space
+                if args.fgsm:
+                    obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
+                            args.epsilon, device)
+                elif args.momentum:
+                    obs_perturb = dqn_dir_perturb_momentum(victim, rollouts.obs[step], perturb_direction, 
+                            args.epsilon, device, maxiter=args.attack_steps)
+                else:
+                    obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
+                            args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
+                            rand_init=args.rand_init)
             
             ### Compute the agent's action based on perturbed observation.
             v_action = victim.step_torch_batch(obs+obs_perturb)
+            
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(v_action)
+
+            #the values of 0 and -1 are set for the Pong game
+            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step]) > 0.5:
+                reward_penalty=reward_penalty+1
 
             for info in infos:
                 if 'episode' in info.keys():
@@ -317,8 +329,10 @@ def main():
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
             
+
+            
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward, masks, bad_masks)
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks)
         
         ### Update the director
         with torch.no_grad():
