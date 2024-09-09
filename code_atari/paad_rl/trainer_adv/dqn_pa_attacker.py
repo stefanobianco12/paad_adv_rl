@@ -294,6 +294,7 @@ def main():
                     rollouts.masks[step]) > 0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
+                    print("FGSM")
                     obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
                             args.epsilon, device)
                 elif args.momentum:
