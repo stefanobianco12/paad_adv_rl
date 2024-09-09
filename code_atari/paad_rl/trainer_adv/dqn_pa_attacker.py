@@ -276,7 +276,6 @@ def main():
                 agent.optimizer, j, num_updates,
                 agent.optimizer.lr if args.algo == "acktr" else args.lr)
             
-        reward_min=torch.inf
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():

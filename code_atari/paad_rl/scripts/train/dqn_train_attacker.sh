@@ -6,7 +6,7 @@ ENV=$1
 CUDA=$2
 
 # path to the trained victim model. 
-VICTIM_PATH="./released_models/dqn_victim/" ## use this line if attack our pre-trained victim 
+VICTIM_PATH="./trained_models/dqn_victim/" ## use this line if attack our pre-trained victim 
 # VICTIM_PATH="./learned_models/dqn/"   ## use this line if attack a user-trained victim
 
 STEPS=6000000 # total number of training steps
@@ -39,7 +39,7 @@ elif [ "${ENV}" = "FreewayNoFrameskip-v4" ]; then
     NPROC=4
 elif [ "${ENV}" = "PongNoFrameskip-v4" ]; then
     # For Pong
-    EPS=0.0002
+    EPS=0.005
     ALR=0.00002
     DIR='./data/dqn_results/pong'
     LOG='./data/log/log_pong'
@@ -93,20 +93,20 @@ else
 fi
 
 ### test natural reward ################
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 ########################################
 
 ### test heuristic attacks #############
 # random attack
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker random --epsilon ${EPS} --fgsm --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker random --epsilon ${EPS} --fgsm --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 # minbest attack
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minbest --epsilon ${EPS} --fgsm  --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minbest --epsilon ${EPS} --fgsm  --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 # minbest+momentum attack
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minbest --epsilon ${EPS} --momentum --attack-steps 10 --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minbest --epsilon ${EPS} --momentum --attack-steps 10 --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 # minq attack
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minq --epsilon ${EPS} --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker minq --epsilon ${EPS} --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 # maxdiff attack
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker maxdiff --epsilon ${EPS} --attack-steps 10 --attack-lr ${ALR}  --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker maxdiff --epsilon ${EPS} --attack-steps 10 --attack-lr ${ALR}  --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 ########################################
 
 ### train and test pa-ad attack ########
@@ -115,7 +115,7 @@ python evaluator/dqn_test.py --env-name ${ENV} --algo acktr --cuda-id ${CUDA} --
 ########################################
 
 ### train and test sa-rl attack ########
-python trainer_adv/dqn_sa_attacker.py --env-name ${ENV} --epsilon ${EPS} --cuda-id ${CUDA} --num-env-steps ${STEPS} --num-steps ${HORIZON} --num-processes ${NPROC} --use-linear-lr-decay --res-dir ${DIR} --log-dir ${LOG} --max-grad-norm 0.1 --lr 1e-6 --victim-dir ${VICTIM_PATH} 
-python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker sarl --epsilon ${EPS} --res-dir ${DIR} --log-dir ${LOG} --det --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python trainer_adv/dqn_sa_attacker.py --env-name ${ENV} --epsilon ${EPS} --cuda-id ${CUDA} --num-env-steps ${STEPS} --num-steps ${HORIZON} --num-processes ${NPROC} --use-linear-lr-decay --res-dir ${DIR} --log-dir ${LOG} --max-grad-norm 0.1 --lr 1e-6 --victim-dir ${VICTIM_PATH} 
+#python evaluator/dqn_test.py --env-name ${ENV} --cuda-id ${CUDA} --attacker sarl --epsilon ${EPS} --res-dir ${DIR} --log-dir ${LOG} --det --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 ########################################
 

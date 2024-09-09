@@ -129,7 +129,7 @@ class Policy(nn.Module):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
         p = self.prob(actor_features)
 
-        return p 
+        return p.mean()
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action, beta=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
