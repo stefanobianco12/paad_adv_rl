@@ -303,6 +303,9 @@ def main():
                     obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
                             args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
                             rand_init=args.rand_init)
+
+                reward_penalty=reward_penalty+1
+                print(reward_penalty)
             
             ### Compute the agent's action based on perturbed observation.
             v_action = victim.step_torch_batch(obs+obs_perturb)
@@ -310,11 +313,6 @@ def main():
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(v_action)
-
-            #the values of 0 and -1 are set for the Pong game
-            if actor_critic.get_dist(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]).entrop()<0.693:
-                reward_penalty=reward_penalty+1
 
             for info in infos:
                 if 'episode' in info.keys():
