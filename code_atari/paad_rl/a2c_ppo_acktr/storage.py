@@ -49,8 +49,8 @@ class RolloutStorage(object):
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
                value_preds, rewards,reward_penalty, masks, bad_masks):
-        w_1=1
-        w_2=1
+        w_1=1/2
+        w_2=1/2
         rewards=w_1*rewards+w_2*reward_penalty
         self.rewards[self.step].copy_(rewards)
         self.obs[self.step + 1].copy_(obs)

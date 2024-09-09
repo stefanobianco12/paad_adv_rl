@@ -9,7 +9,7 @@ CUDA=$2
 VICTIM_PATH="./trained_models/dqn_victim/" ## use this line if attack our pre-trained victim 
 # VICTIM_PATH="./learned_models/dqn/"   ## use this line if attack a user-trained victim
 
-STEPS=3000000 # total number of training steps
+STEPS=2000000 # total number of training steps
 TEST_NUM=50 # total number of testing episodes
 ROOT="./data/dqn_results/" # path to save results
 
