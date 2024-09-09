@@ -177,6 +177,7 @@ class KFACOptimizer(optim.Optimizer):
 
     def _prepare_model(self):
         for module in self.model.modules():
+            print(module)
             classname = module.__class__.__name__
             if classname in self.known_modules:
                 assert not ((classname in ['Linear', 'Conv2d']) and module.bias is not None), \
