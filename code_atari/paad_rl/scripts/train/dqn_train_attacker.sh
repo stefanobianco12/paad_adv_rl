@@ -9,8 +9,8 @@ CUDA=$2
 VICTIM_PATH="./trained_models/dqn_victim/" ## use this line if attack our pre-trained victim 
 # VICTIM_PATH="./learned_models/dqn/"   ## use this line if attack a user-trained victim
 
-STEPS=6000000 # total number of training steps
-TEST_NUM=100 # total number of testing episodes
+STEPS=60000 # total number of training steps
+TEST_NUM=50 # total number of testing episodes
 ROOT="./data/dqn_results/" # path to save results
 
 if [ "${ENV}" = "AlienNoFrameskip-v4" ]; then
@@ -39,7 +39,7 @@ elif [ "${ENV}" = "FreewayNoFrameskip-v4" ]; then
     NPROC=4
 elif [ "${ENV}" = "PongNoFrameskip-v4" ]; then
     # For Pong
-    EPS=0.005
+    EPS=0.0002
     ALR=0.00002
     DIR='./data/dqn_results/pong'
     LOG='./data/log/log_pong'
