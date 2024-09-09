@@ -260,7 +260,7 @@ class CNNBase(NNBase):
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         #self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
-        #self.prob = init_(nn.Linear(hidden_size, 1))
+        self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
 
         self.train()
 
