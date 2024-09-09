@@ -49,10 +49,9 @@ class Policy(nn.Module):
 
         self.base = base(obs_shape[0], **base_kwargs)
         #probabiliy to attack layer
-        hidden_size = 512
-        self.prob = nn.Sequential(nn.Linear(hidden_size, 1), nn.Sigmoid())
+        #hidden_size = 512
+        #self.prob = nn.Sequential(nn.Linear(hidden_size, 1), nn.Sigmoid())
 
-        
         if action_space.__class__.__name__ == "Discrete":
             num_outputs = action_space.n
             self.dist = Categorical(self.base.output_size, num_outputs)
@@ -127,7 +126,7 @@ class Policy(nn.Module):
 
     def get_prob(self, inputs, rnn_hxs, masks):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
-        p = self.prob(actor_features)
+        p = self.base.prob(actor_features)
 
         return p.mean()
 
@@ -259,6 +258,8 @@ class CNNBase(NNBase):
                                constant_(x, 0))
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
+
+        self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
 
         self.train()
 
