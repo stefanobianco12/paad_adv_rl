@@ -288,11 +288,9 @@ def main():
             ### o the action space of the director is only |A|-1. The last dimension of the
             ### policy perturbation is given by 1-\sum a_i
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
-            print(action_log_prob)
         
             obs_perturb = torch.zeros_like(obs).to(device)
-            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]) > 0.5:
+            if action_log_prob > np.log(0.5):
                 ### Compute the perturbation in the state space
                 if args.fgsm:
                     obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
@@ -313,8 +311,7 @@ def main():
             obs, reward, done, infos = envs.step(v_action)
 
             #the values of 0 and -1 are set for the Pong game
-            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]) > 0.5:
+            if action_log_prob > np.log(0.5):
                 reward_penalty=reward_penalty+1
 
             for info in infos:

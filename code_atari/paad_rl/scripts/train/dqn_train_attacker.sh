@@ -44,7 +44,7 @@ elif [ "${ENV}" = "PongNoFrameskip-v4" ]; then
     DIR='./data/dqn_results/pong'
     LOG='./data/log/log_pong'
     HORIZON=64
-    NPROC=4
+    NPROC=1
 elif [ "${ENV}" = "RoadRunnerNoFrameskip-v4" ]; then
     # For RoadRunner
     EPS=0.0005
