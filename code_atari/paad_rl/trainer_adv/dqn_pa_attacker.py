@@ -383,6 +383,8 @@ def main():
             evaluate(actor_critic, ob_rms, args.env_name, args.seed,
                      args.num_processes, eval_log_dir, device)
     rew_file.close()
+    print("RESULT: ")
+    print(reward_penalty)
 
 if __name__ == "__main__":
     main()
