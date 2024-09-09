@@ -290,17 +290,17 @@ def main():
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
         
             obs_perturb = torch.zeros_like(obs).to(device)
-            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]) > 0.5:
+            #if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+            #        rollouts.masks[step]) > 0.5:
                 ### Compute the perturbation in the state space
-                if args.fgsm:
-                    obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
+            if args.fgsm:
+                obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
                             args.epsilon, device)
-                elif args.momentum:
-                    obs_perturb = dqn_dir_perturb_momentum(victim, rollouts.obs[step], perturb_direction, 
+            elif args.momentum:
+                obs_perturb = dqn_dir_perturb_momentum(victim, rollouts.obs[step], perturb_direction, 
                             args.epsilon, device, maxiter=args.attack_steps)
-                else:
-                    obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
+            else:
+                obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
                             args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
                             rand_init=args.rand_init)
             
@@ -312,9 +312,9 @@ def main():
             obs, reward, done, infos = envs.step(v_action)
 
             #the values of 0 and -1 are set for the Pong game
-            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]) > 0.5:
-                reward_penalty=reward_penalty+1
+            #if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+            #        rollouts.masks[step]) > 0.5:
+            #    reward_penalty=reward_penalty+1
 
             for info in infos:
                 if 'episode' in info.keys():
