@@ -288,6 +288,9 @@ def main():
             ### o the action space of the director is only |A|-1. The last dimension of the
             ### policy perturbation is given by 1-\sum a_i
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
+            dist_prob=actor_critic.get_dist(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step])
+            print(dist_prob)
         
             obs_perturb = torch.zeros_like(obs).to(device)
             if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],

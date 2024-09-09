@@ -126,9 +126,10 @@ class Policy(nn.Module):
 
     def get_prob(self, inputs, rnn_hxs, masks):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
-        p = self.base.prob(actor_features)
+        #p = self.base.prob(actor_features)
+        return torch.sigmoid(actor_features).mean()
 
-        return p.mean()
+        #return p.mean()
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action, beta=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
@@ -260,7 +261,7 @@ class CNNBase(NNBase):
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         #self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
-        self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
+        #self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
 
         self.train()
 
