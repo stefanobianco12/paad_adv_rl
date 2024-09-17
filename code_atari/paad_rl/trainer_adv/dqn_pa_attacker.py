@@ -328,7 +328,7 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks)
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight)
         
         ### Update the director
         with torch.no_grad():
