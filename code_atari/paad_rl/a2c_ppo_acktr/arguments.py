@@ -305,6 +305,11 @@ def get_args():
         type=float,
         default=0,
         help='rewards added to a misclassification')
+    parser.add_argument(
+        '--weight',
+        type=float,
+        default=0,
+        help='weight to scalarize reward function')
     
 
     args = parser.parse_args()
