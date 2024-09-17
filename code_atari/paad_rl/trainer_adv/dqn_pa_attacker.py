@@ -290,8 +290,8 @@ def main():
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
         
             obs_perturb = torch.zeros_like(obs).to(device)
-            if actor_critic.get_dist(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step]).entrop()<0.693:
+            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step])>0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
                     obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
