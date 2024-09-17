@@ -269,7 +269,7 @@ def main():
     performance_record = deque(maxlen=100)
 
     reward_penalty=0
-        
+    adv_j=0
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -307,6 +307,8 @@ def main():
                             rand_init=args.rand_init)
 
                 reward_penalty=reward_penalty+1
+                adv_j=adv_j+1
+
             
             ### Compute the agent's action based on perturbed observation.
             v_action = victim.step_torch_batch(obs+obs_perturb)
@@ -330,7 +332,7 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight,args.num_steps)
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight,(j+1)*step)
         
         ### Update the director
         with torch.no_grad():
@@ -360,6 +362,9 @@ def main():
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
             if not args.verbose:
+                print("Total Attack Iteration: ")
+                print(adv_j)
+                adv_j=0
                 print(
                     "Iteration {}, num timesteps {}, FPS {}"
                     .format(j, total_num_steps, int(total_num_steps / (end - start))))
