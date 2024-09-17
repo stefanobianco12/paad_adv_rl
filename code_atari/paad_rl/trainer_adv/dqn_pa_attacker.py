@@ -305,7 +305,6 @@ def main():
                             rand_init=args.rand_init)
 
                 reward_penalty=reward_penalty+1
-                print(reward_penalty)
             
             ### Compute the agent's action based on perturbed observation.
             v_action = victim.step_torch_batch(obs+obs_perturb)
@@ -369,6 +368,8 @@ def main():
                     .format(len(episode_rewards), np.mean(episode_rewards),
                             np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), value_loss, action_loss, dist_entropy))
+                    print("Total attacks: ")
+                    print(reward_penalty)
                 rew_file.write("Step: {}, Reward: {} \n".format(total_num_steps, np.mean(episode_rewards)))
             if not args.verbose:
                 print(obs_perturb[0])
