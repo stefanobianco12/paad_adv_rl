@@ -169,17 +169,19 @@ def main():
             softmax = torch.nn.Softmax(dim=-1)
             clean_policy = softmax(agent.Q(obs))
             old_obs = obs.clone()
-            if args.attacker:
-                if args.attacker == "sarl":
-                    obs, recurrent = attacker.attack_torch(obs, recurrent, masks, epsilon=args.epsilon, device=device)
-                elif args.attacker == "paad":
-                    obs, recurrent = attacker.attack_torch(agent, obs, recurrent, masks, epsilon=args.epsilon,
-                                fgsm=args.fgsm, lr=args.attack_lr, pgd_steps=args.attack_steps, device=device, 
-                                rand_init=args.rand_init, momentum=args.momentum)
-                elif args.attacker == "random":
-                    obs = attacker.attack_torch(obs, epsilon=args.epsilon, device=device)
-                else:
-                    obs = attacker.attack_torch(agent.Q, obs, epsilon=args.epsilon, fgsm=args.fgsm, lr=args.attack_lr, pgd_steps=args.attack_steps, device=device, rand_init=args.rand_init, momentum=args.momentum)
+            if pa_attacker.get_prob(obs, recurrent, masks)>0.5:
+                print("ATTACK")
+                if args.attacker:
+                    if args.attacker == "sarl":
+                        obs, recurrent = attacker.attack_torch(obs, recurrent, masks, epsilon=args.epsilon, device=device)
+                    elif args.attacker == "paad":
+                        obs, recurrent = attacker.attack_torch(agent, obs, recurrent, masks, epsilon=args.epsilon,
+                                    fgsm=args.fgsm, lr=args.attack_lr, pgd_steps=args.attack_steps, device=device, 
+                                    rand_init=args.rand_init, momentum=args.momentum)
+                    elif args.attacker == "random":
+                        obs = attacker.attack_torch(obs, epsilon=args.epsilon, device=device)
+                    else:
+                        obs = attacker.attack_torch(agent.Q, obs, epsilon=args.epsilon, fgsm=args.fgsm, lr=args.attack_lr, pgd_steps=args.attack_steps, device=device, rand_init=args.rand_init, momentum=args.momentum)
         
         if num_episodes >= args.test_episodes:
             break
