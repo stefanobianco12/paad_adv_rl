@@ -146,6 +146,8 @@ def main():
     
     num_episodes = 0
     all_rewards = []
+
+    num_attack=0
     
     for j in range(num_updates):
         
@@ -171,6 +173,7 @@ def main():
             old_obs = obs.clone()
             if pa_attacker.get_prob(obs, recurrent, masks)>0.5:
                 print("ATTACK")
+                num_attack=num_attack+1
                 if args.attacker:
                     if args.attacker == "sarl":
                         obs, recurrent = attacker.attack_torch(obs, recurrent, masks, epsilon=args.epsilon, device=device)
@@ -201,6 +204,7 @@ def main():
 
     all_rewards = np.array(all_rewards)
     print("Average rewards", np.mean(all_rewards), "std", np.std(all_rewards))
+    print("Num. Attacks",num_attack)
     rew_file.write("Average rewards:" + str(np.mean(all_rewards).round(2)) + ", std:" + str(np.std(all_rewards).round(2)))
     rew_file.close()
 
