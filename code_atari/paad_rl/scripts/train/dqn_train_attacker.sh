@@ -112,8 +112,8 @@ fi
 ########################################
 
 ### train and test pa-ad attack ########
-python trainer_adv/dqn_pa_attacker.py --env-name ${ENV} --algo ppo --epsilon ${EPS} --cuda-id ${CUDA} --num-env-steps ${STEPS} --num-steps ${HORIZON} --num-processes ${NPROC} --use-linear-lr-decay --fgsm --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --weight ${WEIGHT}
-#python evaluator/dqn_test.py --env-name ${ENV} --algo ppo --cuda-id ${CUDA} --attacker paad --epsilon ${EPS} --fgsm --res-dir ${DIR} --log-dir ${LOG} --det --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
+#python trainer_adv/dqn_pa_attacker.py --env-name ${ENV} --algo ppo --epsilon ${EPS} --cuda-id ${CUDA} --num-env-steps ${STEPS} --num-steps ${HORIZON} --num-processes ${NPROC} --use-linear-lr-decay --fgsm --res-dir ${DIR} --log-dir ${LOG} --victim-dir ${VICTIM_PATH} --weight ${WEIGHT}
+python evaluator/dqn_test.py --env-name ${ENV} --algo ppo --cuda-id ${CUDA} --attacker paad --epsilon ${EPS} --fgsm --res-dir ${DIR} --log-dir ${LOG} --det --victim-dir ${VICTIM_PATH} --test-episodes ${TEST_NUM}
 ########################################
 
 ### train and test sa-rl attack ########
