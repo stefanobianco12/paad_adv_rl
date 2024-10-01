@@ -260,7 +260,8 @@ def main():
     rollouts.to(device)
     episode_rewards = deque(maxlen=10)
     print("Weight: ")
-    print(args.weight)
+    print(args.weight_1)
+    print(args.weight_2)
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
