@@ -273,6 +273,7 @@ def main():
     print("num steps: ",args.num_steps)
 
     total_reward_penalty=0
+    reward_penalty=0
     adv_j=0
     for j in range(num_updates):
         total_reward_penalty=total_reward_penalty+reward_penalty
