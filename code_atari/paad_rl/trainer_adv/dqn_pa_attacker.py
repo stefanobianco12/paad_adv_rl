@@ -271,13 +271,12 @@ def main():
     print("Num_updates: ",num_updates)
     print("Num env steps: ",args.num_env_steps)
     print("num steps: ",args.num_steps)
-
-    total_reward_penalty=0
+    print("-------------------------------------------------")
     reward_penalty=0
     adv_j=0
     for j in range(num_updates):
-        total_reward_penalty=total_reward_penalty+reward_penalty
-        reward_penalty=0
+        #total_reward_penalty=total_reward_penalty+reward_penalty
+        #reward_penalty=0
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             utils.update_linear_schedule(
@@ -396,7 +395,7 @@ def main():
                      args.num_processes, eval_log_dir, device)
     rew_file.close()
     print("RESULT: ")
-    print(total_reward_penalty)
+    print(reward_penalty)
 
 if __name__ == "__main__":
     main()
