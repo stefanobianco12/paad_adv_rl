@@ -268,11 +268,14 @@ def main():
     rew_file = open(result_path, "wt")
     best_performance = np.inf
     performance_record = deque(maxlen=100)
+    print("Num_updates: ",num_updates)
+    print("Num env steps: ",args.num_env_steps)
+    print("num steps: ",args.num_steps)
 
     reward_penalty=0
     adv_j=0
     for j in range(num_updates):
-
+        reward_penalty=0
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             utils.update_linear_schedule(

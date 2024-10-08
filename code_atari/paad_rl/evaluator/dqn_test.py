@@ -146,7 +146,9 @@ def main():
     
     num_episodes = 0
     all_rewards = []
-
+    print("Num_updates: ",num_updates)
+    print("Num env steps: ",args.num_env_steps)
+    print("num steps: ",args.num_steps)
     num_attack=0
     
     for j in range(num_updates):
