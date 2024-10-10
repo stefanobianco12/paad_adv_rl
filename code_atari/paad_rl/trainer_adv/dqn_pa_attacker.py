@@ -274,9 +274,12 @@ def main():
     print("-------------------------------------------------")
     reward_penalty=0
     adv_j=0
+    record_path = os.path.join(args.res_dir, "log.txt")
+    log_file=open(record_path, "wt")
+    total_reward_penalty=0
     for j in range(num_updates):
         #total_reward_penalty=total_reward_penalty+reward_penalty
-        #reward_penalty=0
+        reward_penalty=0
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             utils.update_linear_schedule(
@@ -297,8 +300,8 @@ def main():
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
         
             obs_perturb = torch.zeros_like(obs).to(device)
-            if actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step])>0.5:
+            prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
+            if prob_to_attack>0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
                     obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
@@ -313,6 +316,7 @@ def main():
 
                 reward_penalty=reward_penalty+1
                 adv_j=adv_j+1
+                total_reward_penalty=total_reward_penalty+1
 
             
             ### Compute the agent's action based on perturbed observation.
@@ -337,7 +341,9 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,(j+1)*(step+1))
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,step+1)
+            
+            log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
         
         ### Update the director
         with torch.no_grad():
@@ -380,12 +386,10 @@ def main():
                     .format(len(episode_rewards), np.mean(episode_rewards),
                             np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), value_loss, action_loss, dist_entropy))
-                    print("Total attacks: ")
-                    print(reward_penalty)
                 rew_file.write("Step: {}, Reward: {} \n".format(total_num_steps, np.mean(episode_rewards)))
-            if not args.verbose:
-                print(obs_perturb[0])
-                print("norm", torch.norm(obs_perturb, p=np.inf))
+            #if not args.verbose:
+            #    print(obs_perturb[0])
+            #   print("norm", torch.norm(obs_perturb, p=np.inf))
             
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
@@ -394,8 +398,9 @@ def main():
             evaluate(actor_critic, ob_rms, args.env_name, args.seed,
                      args.num_processes, eval_log_dir, device)
     rew_file.close()
+    log_file.close()
     print("RESULT: ")
-    print(reward_penalty)
+    print(total_reward_penalty)
 
 if __name__ == "__main__":
     main()
