@@ -6,6 +6,7 @@ from collections import deque
 import gym
 from gym.spaces.box import Box
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -27,6 +28,27 @@ COEFF = 1
 
 def get_policy(victim, obs):
     return torch.distributions.categorical.Categorical(logits=victim.Q(obs).squeeze())
+
+def save_plot_reward(reward_list):
+    plt.plot(reward_list)
+    plt.xlabel('Timestep')
+    plt.ylabel('Reward')
+    plt.title('Rewards over Episodes')
+    plt.savefig('rewards_plot.png')
+
+def save_plot_penalty(penalty):
+    plt.plot(penalty)
+    plt.xlabel('Timestep')
+    plt.ylabel('Number of attacks')
+    plt.title('Penalty reward')
+    plt.savefig('penalty.png')
+
+def save_plot_probs(probs):
+    plt.plot(probs)
+    plt.xlabel('Timestep')
+    plt.ylabel('Probabilty')
+    plt.title('Probabilty to attack')
+    plt.savefig('probs.png')
 
 def dqn_dir_perturb_fgsm(victim, obs, direction, epsilon, device):
     """
@@ -277,6 +299,9 @@ def main():
     record_path = os.path.join(args.res_dir, "log.txt")
     log_file=open(record_path, "wt")
     total_reward_penalty=0
+    list_rew=[]
+    list_penalty=[]
+    list_probs=[]
     for j in range(num_updates):
         #total_reward_penalty=total_reward_penalty+reward_penalty
         reward_penalty=0
@@ -301,6 +326,7 @@ def main():
         
             obs_perturb = torch.zeros_like(obs).to(device)
             prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
+            list_probs.append(prob_to_attack)
             if prob_to_attack>0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
@@ -325,6 +351,8 @@ def main():
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(v_action)
+            list_rew.append(-reward.sum().item())
+            list_penalty.append(reward_penalty)
 
             for info in infos:
                 if 'episode' in info.keys():
