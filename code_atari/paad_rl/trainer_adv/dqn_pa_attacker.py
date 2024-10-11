@@ -29,22 +29,31 @@ COEFF = 1
 def get_policy(victim, obs):
     return torch.distributions.categorical.Categorical(logits=victim.Q(obs).squeeze())
 
-def save_plot_reward(reward_list):
-    plt.plot(reward_list)
+def save_plot_reward(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+
+    plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Reward')
     plt.title('Rewards over Episodes')
     plt.savefig('rewards_plot.png')
 
-def save_plot_penalty(penalty):
-    plt.plot(penalty)
+def save_plot_penalty(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+        
+    plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Number of attacks')
     plt.title('Penalty reward')
     plt.savefig('penalty.png')
 
-def save_plot_probs(probs):
-    plt.plot(probs)
+def save_plot_probs(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+        
+    plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Probabilty')
     plt.title('Probabilty to attack')
@@ -199,6 +208,7 @@ def main():
     model_path = os.path.join(model_dir, exp_name)
     result_path = os.path.join(args.res_dir, exp_name + ".txt")
 
+
     ### Define the director of PA-AD
     ### We could use either a2c, ppo, or acktr as the RL algorithm
     ### to train the director.
@@ -297,11 +307,15 @@ def main():
     reward_penalty=0
     adv_j=0
     record_path = os.path.join(args.res_dir, "log.txt")
+    reward_path = os.path.join(args.res_dir, "reward.txt")
+    penalty_path = os.path.join(args.res_dir, "penalty.txt")
+    probs_path = os.path.join(args.res_dir, "probs.txt")
     log_file=open(record_path, "wt")
+    reward_file=open(reward_path, "wt")
+    penalty_file=open(penalty_path, "wt")
+    probs_file=open(probs_path, "wt")
     total_reward_penalty=0
-    list_rew=[]
-    list_penalty=[]
-    list_probs=[]
+
     for j in range(num_updates):
         #total_reward_penalty=total_reward_penalty+reward_penalty
         reward_penalty=0
@@ -326,7 +340,6 @@ def main():
         
             obs_perturb = torch.zeros_like(obs).to(device)
             prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
-            list_probs.append(prob_to_attack)
             if prob_to_attack>0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
@@ -351,8 +364,6 @@ def main():
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(v_action)
-            list_rew.append(-reward.sum().item())
-            list_penalty.append(reward_penalty)
 
             for info in infos:
                 if 'episode' in info.keys():
@@ -372,6 +383,10 @@ def main():
                             action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,step+1)
             
             log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
+            reward_file.write("{} \n".format(-reward.sum().item()))
+            penalty_file.write("{} \n".format(reward_penalty))
+            probs_file.write("{} \n".format(prob_to_attack))
+
         
         ### Update the director
         with torch.no_grad():
@@ -427,11 +442,14 @@ def main():
                      args.num_processes, eval_log_dir, device)
     rew_file.close()
     log_file.close()
+    probs_file.close()
+    reward_file.close()
+    penalty_file.close()
     print("RESULT: ")
     print(total_reward_penalty)
-    save_plot_reward(list_rew)
-    save_plot_probs(list_probs)
-    save_plot_penalty(list_penalty)
+    save_plot_reward(reward_path)
+    save_plot_probs(probs_path)
+    save_plot_penalty(penalty_path)
 
 if __name__ == "__main__":
     main()
