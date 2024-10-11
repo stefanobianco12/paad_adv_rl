@@ -429,6 +429,9 @@ def main():
     log_file.close()
     print("RESULT: ")
     print(total_reward_penalty)
+    save_plot_reward(list_rew)
+    save_plot_probs(list_probs)
+    save_plot_penalty(list_penalty)
 
 if __name__ == "__main__":
     main()
