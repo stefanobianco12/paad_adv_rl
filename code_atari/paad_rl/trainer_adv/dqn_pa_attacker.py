@@ -33,31 +33,37 @@ def save_plot_reward(file_path):
     with open(file_path, 'r') as file:
         values = [float(line.strip()) for line in file]
 
+    plt.figure()
     plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Reward')
     plt.title('Rewards over Episodes')
     plt.savefig('rewards_plot.png')
+    plt.close()
 
 def save_plot_penalty(file_path):
     with open(file_path, 'r') as file:
         values = [float(line.strip()) for line in file]
-        
+    
+    plt.figure()
     plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Number of attacks')
     plt.title('Penalty reward')
     plt.savefig('penalty.png')
+    plt.close()
 
 def save_plot_probs(file_path):
     with open(file_path, 'r') as file:
         values = [float(line.strip()) for line in file]
-        
+
+    plt.figure()  
     plt.plot(values)
     plt.xlabel('Timestep')
     plt.ylabel('Probabilty')
     plt.title('Probabilty to attack')
     plt.savefig('probs.png')
+    plt.close()
 
 def dqn_dir_perturb_fgsm(victim, obs, direction, epsilon, device):
     """
@@ -383,9 +389,9 @@ def main():
                             action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,step+1)
             
             log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
-            reward_file.write("{} \n".format(-reward.sum().item()))
-            penalty_file.write("{} \n".format(reward_penalty))
-            probs_file.write("{} \n".format(prob_to_attack))
+            reward_file.write("{}\n".format(-reward.sum().item()))
+            penalty_file.write("{}\n".format(reward_penalty))
+            probs_file.write("{}\n".format(prob_to_attack))
 
         
         ### Update the director
