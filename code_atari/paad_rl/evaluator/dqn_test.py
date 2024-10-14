@@ -150,31 +150,40 @@ def main():
     print("Num env steps: ",args.num_env_steps)
     print("num steps: ",args.num_steps)
     num_attack=0
-    
+    count_num_step=0
+    num_step_end=0
+    num_update_end=0
     for j in range(num_updates):
-        
+        #print("NUM_UPDATE: ",j)
         for step in range(args.num_steps):
+            #print("STEP: ",step)
             # Sample actions
             with torch.no_grad():
                 action = agent.step_torch_epsilon_greedy(obs, 0.01)
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
+            #print("INFOS: ",infos)
+            #print("REWARD: ",reward)
             for info in infos:
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
                     num_episodes += 1
+                    #print("NUM_UPDATE: ",j)
+                    #print("STEP: ",step)
                     rew_file.write("Episode: {}, Reward: {} \n".format(num_episodes, info['episode']['r']))
                     all_rewards.append(info['episode']['r'])
             
             masks = torch.FloatTensor(
                 [[0.0] if done_ else [1.0] for done_ in done])
+            
+            count_num_step=count_num_step+1
 
             ## Attack obs (if any)
             softmax = torch.nn.Softmax(dim=-1)
             clean_policy = softmax(agent.Q(obs))
             old_obs = obs.clone()
             if pa_attacker.get_prob(obs, recurrent, masks)>0.5:
-                print("ATTACK")
+                #print("ATTACK")
                 num_attack=num_attack+1
                 if args.attacker:
                     if args.attacker == "sarl":
@@ -189,6 +198,8 @@ def main():
                         obs = attacker.attack_torch(agent.Q, obs, epsilon=args.epsilon, fgsm=args.fgsm, lr=args.attack_lr, pgd_steps=args.attack_steps, device=device, rand_init=args.rand_init, momentum=args.momentum)
         
         if num_episodes >= args.test_episodes:
+            num_update_end=j
+            num_step_end=step
             break
 
         if j % args.log_interval == 0:
@@ -209,6 +220,10 @@ def main():
     print("Num. Attacks",num_attack)
     rew_file.write("Average rewards:" + str(np.mean(all_rewards).round(2)) + ", std:" + str(np.std(all_rewards).round(2)))
     rew_file.close()
+    print(count_num_step)
+    print(num_episodes)
+    print(num_update_end)
+    print(num_step_end)
 
 if __name__ == "__main__":
     main()
