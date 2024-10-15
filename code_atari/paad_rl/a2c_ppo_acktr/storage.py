@@ -13,8 +13,10 @@ class RolloutStorage(object):
         self.recurrent_hidden_states = torch.zeros(
             num_steps + 1, num_processes, recurrent_hidden_state_size)
         self.rewards = torch.zeros(num_steps, num_processes, 1)
+        self.penalty_reward=torch.zeros(num_steps, num_processes, 1)         #morl
         self.value_preds = torch.zeros(num_steps + 1, num_processes, 1)
         self.returns = torch.zeros(num_steps + 1, num_processes, 1)
+        self.penalty_returns = torch.zeros(num_steps + 1, num_processes, 1)  #morl
         self.action_log_probs = torch.zeros(num_steps, num_processes, 1)
         if action_space.__class__.__name__ == 'Discrete':
             action_shape = 1
@@ -40,6 +42,7 @@ class RolloutStorage(object):
         self.obs = self.obs.to(device)
         self.recurrent_hidden_states = self.recurrent_hidden_states.to(device)
         self.rewards = self.rewards.to(device)
+        self.penalty_reward=self.penalty_reward.to(device)        #morl
         self.value_preds = self.value_preds.to(device)
         self.returns = self.returns.to(device)
         self.action_log_probs = self.action_log_probs.to(device)
@@ -48,10 +51,10 @@ class RolloutStorage(object):
         self.bad_masks = self.bad_masks.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards,reward_penalty, masks, bad_masks,weight_1,weight_2,num_steps):
-        #num_steps=1
-        rewards=weight_1*rewards+weight_2*(reward_penalty/num_steps)
+               value_preds, rewards,reward_penalty, masks, bad_masks):
+
         self.rewards[self.step].copy_(rewards)
+        self.penalty_reward[self.step].copy_(reward_penalty)      #morl
         self.obs[self.step + 1].copy_(obs)
         self.recurrent_hidden_states[self.step +
                                      1].copy_(recurrent_hidden_states)
@@ -80,7 +83,17 @@ class RolloutStorage(object):
             if use_gae:
                 self.value_preds[-1] = next_value
                 gae = 0
+                penalty_gae=0
                 for step in reversed(range(self.rewards.size(0))):
+                    penalty_delta = self.penalty_reward[step] + gamma * self.value_preds[     #morl
+                        step + 1] * self.masks[step + 
+                                               1] - self.value_preds[step]
+                    penalty_gae = penalty_delta + gamma * gae_lambda * self.masks[step +
+                                                                  1] * penalty_gae
+                    penalty_gae = penalty_gae * self.bad_masks[step + 1]
+                    self.penalty_returns[step] = penalty_gae + self.value_preds[step]       
+
+
                     delta = self.rewards[step] + gamma * self.value_preds[
                         step + 1] * self.masks[step +
                                                1] - self.value_preds[step]
@@ -88,9 +101,15 @@ class RolloutStorage(object):
                                                                   1] * gae
                     gae = gae * self.bad_masks[step + 1]
                     self.returns[step] = gae + self.value_preds[step]
+
             else:
                 self.returns[-1] = next_value
+                self.penalty_returns[-1]=next_value
                 for step in reversed(range(self.rewards.size(0))):
+                    self.penalty_returns[step] = (self.penalty_returns[step + 1] * \
+                        gamma * self.masks[step + 1] + self.penalty_reward[step]) * self.bad_masks[step + 1] \
+                        + (1 - self.bad_masks[step + 1]) * self.value_preds[step]
+                    
                     self.returns[step] = (self.returns[step + 1] * \
                         gamma * self.masks[step + 1] + self.rewards[step]) * self.bad_masks[step + 1] \
                         + (1 - self.bad_masks[step + 1]) * self.value_preds[step]
@@ -98,6 +117,7 @@ class RolloutStorage(object):
             if use_gae:
                 self.value_preds[-1] = next_value
                 gae = 0
+                penalty_gae=0
                 for step in reversed(range(self.rewards.size(0))):
                     delta = self.rewards[step] + gamma * self.value_preds[
                         step + 1] * self.masks[step +
@@ -105,11 +125,23 @@ class RolloutStorage(object):
                     gae = delta + gamma * gae_lambda * self.masks[step +
                                                                   1] * gae
                     self.returns[step] = gae + self.value_preds[step]
+
+
+                    penalty_delta = self.penalty_reward[step] + gamma * self.value_preds[
+                        step + 1] * self.masks[step +
+                                               1] - self.value_preds[step]
+                    penalty_gae = penalty_delta + gamma * gae_lambda * self.masks[step +
+                                                                  1] * penalty_gae
+                    self.penalty_returns[step] = penalty_gae + self.value_preds[step]
             else:
                 self.returns[-1] = next_value
+                self.penalty_returns[-1]=next_value
                 for step in reversed(range(self.rewards.size(0))):
                     self.returns[step] = self.returns[step + 1] * \
                         gamma * self.masks[step + 1] + self.rewards[step]
+                    
+                    self.penalty_returns[step] = self.penalty_returns[step + 1] * \
+                        gamma * self.masks[step + 1] + self.penalty_reward[step]
 
     def feed_forward_generator(self,
                                advantages,

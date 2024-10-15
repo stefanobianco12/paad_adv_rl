@@ -127,7 +127,7 @@ class Policy(nn.Module):
     def get_prob(self, inputs, rnn_hxs, masks):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
         p = self.base.prob(actor_features)
-        return p.mean()
+        return p.mean()                                              #change?
         #return torch.sigmoid(actor_features).mean()
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action, beta=False):

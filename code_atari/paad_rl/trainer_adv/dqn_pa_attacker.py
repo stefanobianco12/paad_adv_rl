@@ -337,7 +337,6 @@ def main():
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                     rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step], beta=False, deterministic=args.det)
-
             ### Compute the policy perturbation direction.
             ### Here the action space of the original environment is discrete, 
             ### o the action space of the director is only |A|-1. The last dimension of the
