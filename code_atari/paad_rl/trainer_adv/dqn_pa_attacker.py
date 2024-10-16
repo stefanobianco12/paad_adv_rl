@@ -41,6 +41,18 @@ def save_plot_reward(file_path):
     plt.savefig('rewards_plot.png')
     plt.close()
 
+def save_plot_loss(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+
+    plt.figure()
+    plt.plot(values)
+    plt.xlabel('Updates')
+    plt.ylabel('Value loss')
+    plt.title('Loss over updates')
+    plt.savefig('loss_plot.png')
+    plt.close()
+
 def save_plot_penalty(file_path):
     with open(file_path, 'r') as file:
         values = [float(line.strip()) for line in file]
@@ -299,8 +311,7 @@ def main():
     rollouts.to(device)
     episode_rewards = deque(maxlen=10)
     print("Weight: ")
-    print(args.weight_1)
-    print(args.weight_2)
+    print(args.weight)
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
@@ -316,12 +327,15 @@ def main():
     record_path = os.path.join(args.res_dir, "log.txt")
     reward_path = os.path.join(args.res_dir, "reward.txt")
     penalty_path = os.path.join(args.res_dir, "penalty.txt")
+    loss_path = os.path.join(args.res_dir, "loss.txt")
     probs_path = os.path.join(args.res_dir, "probs.txt")
     log_file=open(record_path, "wt")
     reward_file=open(reward_path, "wt")
     penalty_file=open(penalty_path, "wt")
     probs_file=open(probs_path, "wt")
+    loss_file=open(loss_path, "wt")
     total_reward_penalty=0
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for j in range(num_updates):
         #total_reward_penalty=total_reward_penalty+reward_penalty
@@ -344,6 +358,7 @@ def main():
             ### o the action space of the director is only |A|-1. The last dimension of the
             ### policy perturbation is given by 1-\sum a_i
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
+            lambda_penalty=0.2
         
             obs_perturb = torch.zeros_like(obs).to(device)
             prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
@@ -360,9 +375,14 @@ def main():
                             args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
                             rand_init=args.rand_init)
 
-                reward_penalty=reward_penalty+1
+                #reward_penalty=reward_penalty+1
                 adv_j=adv_j+1
                 total_reward_penalty=total_reward_penalty+1
+            #else:
+                #reward_penalty=reward_penalty-1
+
+            reward_penalty=(lambda_penalty * (prob_to_attack - 0.5).pow(2)).to("cpu") 
+            print(reward_penalty)
 
             
             ### Compute the agent's action based on perturbed observation.
@@ -387,7 +407,7 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,step+1)
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight,step+1)
             
             log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
             reward_file.write("{}\n".format(-reward.sum().item()))
@@ -404,6 +424,7 @@ def main():
                                  args.gae_lambda, args.use_proper_time_limits)
         if step % args.train_freq == 0:
             value_loss, action_loss, dist_entropy = agent.update(rollouts)
+            loss_file.write("{}\n".format(value_loss))
         rollouts.after_update()
 
         ### Save the director after args.save_interval iterations
@@ -452,11 +473,13 @@ def main():
     probs_file.close()
     reward_file.close()
     penalty_file.close()
+    loss_file.close()
     print("RESULT: ")
     print(total_reward_penalty)
     save_plot_reward(reward_path)
     save_plot_probs(probs_path)
     save_plot_penalty(penalty_path)
+    save_plot_loss(loss_path)
 
 if __name__ == "__main__":
     main()
