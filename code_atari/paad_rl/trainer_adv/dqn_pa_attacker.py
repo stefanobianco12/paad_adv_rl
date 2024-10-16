@@ -361,6 +361,8 @@ def main():
                 reward_penalty=reward_penalty+1
                 adv_j=adv_j+1
                 total_reward_penalty=total_reward_penalty+1
+            else:
+                reward_penalty=reward_penalty-1
 
             
             ### Compute the agent's action based on perturbed observation.
@@ -385,7 +387,7 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks,args.weight_1,args.weight_2,step+1)
+                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks)
             
             log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
             reward_file.write("{}\n".format(-reward.sum().item()))
@@ -401,7 +403,9 @@ def main():
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
         if step % args.train_freq == 0:
-            value_loss, action_loss, dist_entropy = agent.update(rollouts)
+            value_loss, action_loss, dist_entropy, value_loss_penalty, action_loss_penalty, dist_entropy_penalty  = agent.update(rollouts)
+            print("Loss 1: ",value_loss)
+            print("Loss 2: ",value_loss_penalty)
         rollouts.after_update()
 
         ### Save the director after args.save_interval iterations

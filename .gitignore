@@ -108,3 +108,15 @@ code_atari/paad_rl/penalty.png
 code_atari/paad_rl/probs.png
 code_atari/paad_rl/rewards_plot.png
 code_atari/paad_rl/learned_adv/ppo/dqn_obspol_attacker_PongNoFrameskip-v4_e0.005_fgsm
+code_atari/paad_rl/data/log/log_pong/4.monitor.csv
+code_atari/paad_rl/data/log/log_pong/5.monitor.csv
+code_atari/paad_rl/data/log/log_pong/6.monitor.csv
+code_atari/paad_rl/data/log/log_pong/7.monitor.csv
+code_atari/paad_rl/data/log/log_pong/8.monitor.csv
+code_atari/paad_rl/data/log/log_pong/9.monitor.csv
+code_atari/paad_rl/data/log/log_pong/10.monitor.csv
+code_atari/paad_rl/data/log/log_pong/11.monitor.csv
+code_atari/paad_rl/data/log/log_pong/12.monitor.csv
+code_atari/paad_rl/data/log/log_pong/13.monitor.csv
+code_atari/paad_rl/data/log/log_pong/14.monitor.csv
+code_atari/paad_rl/data/log/log_pong/15.monitor.csv

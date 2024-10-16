@@ -48,13 +48,11 @@ class Policy(nn.Module):
             self.epsilon = epsilon
 
         self.base = base(obs_shape[0], **base_kwargs)
-        #probabiliy to attack layer
-        #hidden_size = 512
-        #self.prob = nn.Sequential(nn.Linear(hidden_size, 1), nn.Sigmoid())
+
 
         if action_space.__class__.__name__ == "Discrete":
             num_outputs = action_space.n
-            self.dist = Categorical(self.base.output_size, num_outputs)
+            self.dist = Categorical(self.base.output_size, num_outputs) 
         elif action_space.__class__.__name__ == "Box":
             if len(action_space.shape) > 1:
                 num_outputs = 1
@@ -71,6 +69,7 @@ class Policy(nn.Module):
             self.dist = Bernoulli(self.base.output_size, num_outputs)
         else:
             raise NotImplementedError
+
 
     @property
     def is_recurrent(self):
@@ -126,7 +125,7 @@ class Policy(nn.Module):
 
     def get_prob(self, inputs, rnn_hxs, masks):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
-        p = self.base.prob(actor_features)
+        p = self.base.prob_head(actor_features)
         return p.mean()                                              #change?
         #return torch.sigmoid(actor_features).mean()
 
@@ -259,7 +258,8 @@ class CNNBase(NNBase):
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
-        self.prob = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
+        #probabiliy to attack layer
+        self.prob_head = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
 
         self.train()
 
