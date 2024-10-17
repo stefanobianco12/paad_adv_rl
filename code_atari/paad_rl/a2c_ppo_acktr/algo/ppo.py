@@ -65,12 +65,15 @@ class PPO():
             for sample in data_generator:
                 obs_batch, recurrent_hidden_states_batch, actions_batch, \
                    value_preds_batch, return_batch, penalty_return_batch, masks_batch, old_action_log_probs_batch, \
-                        adv_targ, penalty_adv_targ = sample
+                        adv_targ, penalty_adv_targ, probs_batch, old_prob_log_batch = sample
 
                 # Reshape to do in a single forward pass for all steps
                 values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
                     obs_batch, recurrent_hidden_states_batch, masks_batch,
                     actions_batch, beta=self.beta)
+                
+                _,prob_log, prob_entropy,_=self.actor_critic.evaluate_probs(obs_batch, recurrent_hidden_states_batch, masks_batch,
+                    actions_batch)
 
                 ratio = torch.exp(action_log_probs -
                                   old_action_log_probs_batch)
@@ -79,8 +82,11 @@ class PPO():
                                     1.0 + self.clip_param) * adv_targ
                 action_loss = -torch.min(surr1, surr2).mean()
 
-                surr1_penalty = ratio * penalty_adv_targ
-                surr2_penalty = torch.clamp(ratio, 1.0 - self.clip_param,
+
+                ratio_penalty=torch.exp(prob_log -
+                                  old_prob_log_batch)
+                surr1_penalty = ratio_penalty * penalty_adv_targ
+                surr2_penalty = torch.clamp(ratio_penalty, 1.0 - self.clip_param,
                                     1.0 + self.clip_param) * penalty_adv_targ
                 action_loss_penalty = -torch.min(surr1_penalty, surr2_penalty).mean()
 
@@ -106,20 +112,31 @@ class PPO():
 
                 self.optimizer.zero_grad()
 
-                (value_loss * self.value_loss_coef + action_loss -
-                 dist_entropy * self.entropy_coef).backward(retain_graph=True)
-                
-                (value_loss_penalty * self.value_loss_coef + action_loss_penalty -
-                 dist_entropy * self.entropy_coef).backward()
-                
 
+                loss_adv=value_loss * self.value_loss_coef + action_loss -dist_entropy * self.entropy_coef
+
+                (loss_adv).backward(retain_graph=True)
+
+                for param in self.actor_critic.base.main.parameters():
+                    param.requires_grad = False
+                w_1=0.8
+                w_2=0.2
+                loss_penalty=value_loss_penalty * self.value_loss_coef + action_loss_penalty -prob_entropy * self.entropy_coef
+  
+                (w_1*loss_adv+w_2*loss_penalty).backward()
+
+                 # Unfreeze the backbone parameters for future updates
+                for param in self.actor_critic.base.main.parameters():
+                    param.requires_grad = True                       
+                                                                                    
+                
                 nn.utils.clip_grad_norm_(self.actor_critic.parameters(),
                                          self.max_grad_norm)
-                
                 
                 #for name, param in self.actor_critic.named_parameters():
                 #    if param.requires_grad:  # Only print trainable parameters
                 #        print(f"{name}: {param.data.shape}")
+
                 
                 self.optimizer.step()
 
@@ -129,7 +146,7 @@ class PPO():
 
                 value_loss_penalty_epoch += value_loss_penalty.item()
                 action_loss_penalty_epoch += action_loss_penalty.item()
-                dist_entropy_penalty_epoch += dist_entropy.item()
+                dist_entropy_penalty_epoch += prob_entropy.item()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 

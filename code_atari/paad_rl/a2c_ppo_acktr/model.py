@@ -125,9 +125,9 @@ class Policy(nn.Module):
 
     def get_prob(self, inputs, rnn_hxs, masks):
         _, actor_features, _ = self.base(inputs, rnn_hxs, masks)
-        p = self.base.prob_head(actor_features)
-        return p.mean()                                              #change?
-        #return torch.sigmoid(actor_features).mean()
+        dist = self.dist(actor_features)
+        p=self.base.prob_head(torch.cat([actor_features, dist.mode()], dim=1))
+        return p,torch.log(p)                                              
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action, beta=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
@@ -144,6 +144,14 @@ class Policy(nn.Module):
             action_log_probs = action_log_probs.detach()
 
         return value, action_log_probs, dist_entropy, rnn_hxs
+    
+    def evaluate_probs(self, inputs, rnn_hxs, masks, action):
+        value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
+        dist = self.dist(actor_features)
+        p=self.base.prob_head(torch.cat([actor_features, action], dim=1))
+        p_entropy = (- (p * torch.log(p + 1e-10) + (1 - p) * torch.log(1 - p + 1e-10))).mean()
+
+        return value, torch.log(p), p_entropy, rnn_hxs
 
 
 class NNBase(nn.Module):
@@ -259,7 +267,14 @@ class CNNBase(NNBase):
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         #probabiliy to attack layer
-        self.prob_head = nn.Sequential(init_(nn.Linear(hidden_size, 1)), nn.Sigmoid())
+        self.prob_head = nn.Sequential(
+            init_(nn.Linear(hidden_size+5, 256)),
+            nn.ReLU(),
+            init_(nn.Linear(256, 128)),
+            nn.ReLU(),
+            init_(nn.Linear(128, 1)),
+            nn.Sigmoid()
+        )        
 
         self.train()
 

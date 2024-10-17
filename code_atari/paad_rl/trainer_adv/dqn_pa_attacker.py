@@ -29,6 +29,31 @@ COEFF = 1
 def get_policy(victim, obs):
     return torch.distributions.categorical.Categorical(logits=victim.Q(obs).squeeze())
 
+
+def save_plot_loss_r1(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+
+    plt.figure()
+    plt.plot(values)
+    plt.xlabel('Update')
+    plt.ylabel('Loss')
+    plt.title('Value Loss R1')
+    plt.savefig('loss_r1_plot.png')
+    plt.close()
+
+def save_plot_loss_penalty(file_path):
+    with open(file_path, 'r') as file:
+        values = [float(line.strip()) for line in file]
+
+    plt.figure()
+    plt.plot(values)
+    plt.xlabel('Update')
+    plt.ylabel('Loss')
+    plt.title('Value Loss penalty reward')
+    plt.savefig('loss_penalty.png')
+    plt.close()
+
 def save_plot_reward(file_path):
     with open(file_path, 'r') as file:
         values = [float(line.strip()) for line in file]
@@ -297,9 +322,6 @@ def main():
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
     episode_rewards = deque(maxlen=10)
-    print("Weight: ")
-    print(args.weight_1)
-    print(args.weight_2)
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
@@ -316,10 +338,14 @@ def main():
     reward_path = os.path.join(args.res_dir, "reward.txt")
     penalty_path = os.path.join(args.res_dir, "penalty.txt")
     probs_path = os.path.join(args.res_dir, "probs.txt")
+    loss_path=os.path.join(args.res_dir, "loss.txt")
+    loss_penalty_path=os.path.join(args.res_dir, "loss_penalty.txt")
     log_file=open(record_path, "wt")
     reward_file=open(reward_path, "wt")
     penalty_file=open(penalty_path, "wt")
     probs_file=open(probs_path, "wt")
+    loss_file=open(loss_path, "wt")
+    loss_penalty_file=open(loss_penalty_path, "wt")
     total_reward_penalty=0
 
     for j in range(num_updates):
@@ -337,6 +363,9 @@ def main():
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                     rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step], beta=False, deterministic=args.det)
+                
+                prob_attack, prob_attack_log=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],
+                    rollouts.masks[step])
             ### Compute the policy perturbation direction.
             ### Here the action space of the original environment is discrete, 
             ### o the action space of the director is only |A|-1. The last dimension of the
@@ -344,20 +373,22 @@ def main():
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
         
             obs_perturb = torch.zeros_like(obs).to(device)
-            prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
-            if prob_to_attack>0.5:
+            prob_to_attack,_=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
+            
+            if prob_to_attack.mean()>0.5:
                 ### Compute the perturbation in the state space
                 if args.fgsm:
                     obs_perturb = dqn_dir_perturb_fgsm(victim, rollouts.obs[step], perturb_direction, 
-                            args.epsilon, device)
+                                args.epsilon, device)
                 elif args.momentum:
                     obs_perturb = dqn_dir_perturb_momentum(victim, rollouts.obs[step], perturb_direction, 
-                            args.epsilon, device, maxiter=args.attack_steps)
+                                args.epsilon, device, maxiter=args.attack_steps)
                 else:
                     obs_perturb = dqn_dir_perturb_pgd(victim, rollouts.obs[step], perturb_direction, 
-                            args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
-                            rand_init=args.rand_init)
-
+                                args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
+                                rand_init=args.rand_init)
+                
+            if prob_to_attack.mean()>0.5:
                 reward_penalty=reward_penalty+1
                 adv_j=adv_j+1
                 total_reward_penalty=total_reward_penalty+1
@@ -387,7 +418,7 @@ def main():
 
             
             rollouts.insert(obs, recurrent_hidden_states, action,
-                            action_log_prob, value, -reward,-reward_penalty, masks, bad_masks)
+                            action_log_prob, value, prob_attack, prob_attack_log, -reward,-reward_penalty, masks, bad_masks)
             
             log_file.write("Step: {}, Reward: {}, R_Penalty: {}, Prob: {} \n".format(step, -reward,-reward_penalty,prob_to_attack))
             reward_file.write("{}\n".format(-reward.sum().item()))
@@ -404,8 +435,8 @@ def main():
                                  args.gae_lambda, args.use_proper_time_limits)
         if step % args.train_freq == 0:
             value_loss, action_loss, dist_entropy, value_loss_penalty, action_loss_penalty, dist_entropy_penalty  = agent.update(rollouts)
-            print("Loss 1: ",value_loss)
-            print("Loss 2: ",value_loss_penalty)
+            loss_file.write("{}\n".format(value_loss))
+            loss_penalty_file.write("{}\n".format(value_loss_penalty))
         rollouts.after_update()
 
         ### Save the director after args.save_interval iterations
@@ -454,11 +485,15 @@ def main():
     probs_file.close()
     reward_file.close()
     penalty_file.close()
+    loss_file.close()
+    loss_penalty_file.close()
     print("RESULT: ")
     print(total_reward_penalty)
     save_plot_reward(reward_path)
     save_plot_probs(probs_path)
     save_plot_penalty(penalty_path)
+    save_plot_loss_r1(loss_path)
+    save_plot_loss_penalty(loss_penalty_path)
 
 if __name__ == "__main__":
     main()

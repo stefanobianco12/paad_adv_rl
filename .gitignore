@@ -120,3 +120,5 @@ code_atari/paad_rl/data/log/log_pong/12.monitor.csv
 code_atari/paad_rl/data/log/log_pong/13.monitor.csv
 code_atari/paad_rl/data/log/log_pong/14.monitor.csv
 code_atari/paad_rl/data/log/log_pong/15.monitor.csv
+code_atari/paad_rl/data/dqn_results/pong/loss_penalty.txt
+code_atari/paad_rl/data/dqn_results/pong/loss.txt

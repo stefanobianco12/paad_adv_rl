@@ -18,6 +18,8 @@ class RolloutStorage(object):
         self.returns = torch.zeros(num_steps + 1, num_processes, 1)
         self.penalty_returns = torch.zeros(num_steps + 1, num_processes, 1)  #morl
         self.action_log_probs = torch.zeros(num_steps, num_processes, 1)
+        self.prob_penalty = torch.zeros(num_steps, num_processes, 1)
+        self.prob_log_penalty = torch.zeros(num_steps, num_processes, 1)
         if action_space.__class__.__name__ == 'Discrete':
             action_shape = 1
         elif len(action_space.shape) > 1:
@@ -26,6 +28,7 @@ class RolloutStorage(object):
                 action_shape *= s
         else:
             action_shape = action_space.shape[0]
+
         self.actions = torch.zeros(num_steps, num_processes, action_shape)
         if action_space.__class__.__name__ == 'Discrete':
             self.actions = self.actions.long()
@@ -48,11 +51,13 @@ class RolloutStorage(object):
         self.penalty_returns=self.penalty_returns.to(device)
         self.action_log_probs = self.action_log_probs.to(device)
         self.actions = self.actions.to(device)
+        self.prob_penalty=self.prob_penalty.to(device)
+        self.prob_log_penalty=self.prob_log_penalty.to(device)
         self.masks = self.masks.to(device)
         self.bad_masks = self.bad_masks.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards,reward_penalty, masks, bad_masks):
+               value_preds, prob_penalty, prob_log_penalty, rewards,reward_penalty, masks, bad_masks):
 
         self.rewards[self.step].copy_(rewards)
         self.penalty_reward[self.step].copy_(torch.tensor(reward_penalty))      #morl
@@ -65,8 +70,9 @@ class RolloutStorage(object):
         #self.rewards[self.step].copy_(rewards)
         self.masks[self.step + 1].copy_(masks)
         self.bad_masks[self.step + 1].copy_(bad_masks)
-
         self.step = (self.step + 1) % self.num_steps
+        self.prob_penalty[self.step].copy_(prob_penalty)
+        self.prob_log_penalty[self.step].copy_(prob_log_penalty)
 
     def after_update(self):
         self.obs[0].copy_(self.obs[-1])
@@ -170,12 +176,14 @@ class RolloutStorage(object):
                 -1, self.recurrent_hidden_states.size(-1))[indices]
             actions_batch = self.actions.view(-1,
                                               self.actions.size(-1))[indices]
+            probs_batch = self.prob_penalty.view(-1,1)[indices]
             value_preds_batch = self.value_preds[:-1].view(-1, 1)[indices]
             return_batch = self.returns[:-1].view(-1, 1)[indices]
             penalty_return_batch = self.penalty_returns[:-1].view(-1, 1)[indices]
             masks_batch = self.masks[:-1].view(-1, 1)[indices]
             old_action_log_probs_batch = self.action_log_probs.view(-1,
                                                                     1)[indices]
+            old_prob_log_batch = self.prob_log_penalty.view(-1,1)[indices]
             if advantages is None:
                 adv_targ = None
                 penalty_adv_targ= None
@@ -184,7 +192,7 @@ class RolloutStorage(object):
                 penalty_adv_targ=penalty_advantages.view(-1, 1)[indices]
 
             yield obs_batch, recurrent_hidden_states_batch, actions_batch, \
-                value_preds_batch, return_batch, penalty_return_batch, masks_batch, old_action_log_probs_batch, adv_targ, penalty_adv_targ
+                value_preds_batch, return_batch, penalty_return_batch, masks_batch, old_action_log_probs_batch, adv_targ, penalty_adv_targ, probs_batch, old_prob_log_batch
 
     def recurrent_generator(self, advantages, penalty_advantages, num_mini_batch):
         num_processes = self.rewards.size(1)
