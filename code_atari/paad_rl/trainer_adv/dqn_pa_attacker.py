@@ -358,8 +358,7 @@ def main():
             ### o the action space of the director is only |A|-1. The last dimension of the
             ### policy perturbation is given by 1-\sum a_i
             perturb_direction = torch.cat((action, -torch.sum(action, dim=1, keepdim=True)), 1)
-            lambda_penalty=0.2
-        
+
             obs_perturb = torch.zeros_like(obs).to(device)
             prob_to_attack=actor_critic.get_prob(rollouts.obs[step], rollouts.recurrent_hidden_states[step],rollouts.masks[step])
             if prob_to_attack>0.5:
@@ -375,14 +374,14 @@ def main():
                             args.epsilon, device, lr=args.attack_lr, maxiter=args.attack_steps, 
                             rand_init=args.rand_init)
 
-                #reward_penalty=reward_penalty+1
+                reward_penalty=reward_penalty+1
                 adv_j=adv_j+1
                 total_reward_penalty=total_reward_penalty+1
-            #else:
-                #reward_penalty=reward_penalty-1
+            else:
+                reward_penalty=reward_penalty-1
 
-            reward_penalty=(lambda_penalty * (prob_to_attack - 0.5).pow(2)).to("cpu") 
-            print(reward_penalty)
+            #reward_penalty=(lambda_penalty * (prob_to_attack - 0.5).pow(2)).to("cpu") 
+            #print(reward_penalty)
 
             
             ### Compute the agent's action based on perturbed observation.
